@@ -1,7 +1,10 @@
 package com.purestation.app.flow
 
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -50,5 +53,30 @@ class FlowTest {
             .debounce(300)              // 300ms 동안 새 입력 없을 때만 방출
             .distinctUntilChanged()     // 같은 값 연속 방지(선택)
             .collect { println("search for: $it") }
+    }
+
+    @Test
+    fun bufferTest1() = runTest {
+        val producer = flow {
+            (1..5).forEach {
+                println("emit $it @${System.currentTimeMillis() % 100000}")
+                emit(it)
+                delay(100)
+            }
+        }
+
+        producer
+            .buffer()                 // 기본: Channel.BUFFERED(드랍 없음)
+            .onEach { delay(300) }    // 느린 소비자
+            .collect { println("collect $it @${System.currentTimeMillis() % 100000}") }
+    }
+
+    @Test
+    fun bufferTest2() = runTest {
+        (1..10).asFlow()
+            .onEach { delay(50) }                          // 빠른 생산
+            .buffer(capacity = 2, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+            .onEach { delay(200) }                         // 느린 소비
+            .collect { println("collect $it") }
     }
 }
