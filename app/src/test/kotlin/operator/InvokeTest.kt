@@ -1,4 +1,4 @@
-package com.purestation.app.operators
+package com.purestation.app.operator
 
 import kotlin.test.Test
 
@@ -16,5 +16,4 @@ class InvokeTest {
             println("Hello $name")
         }
     }
-
 }
