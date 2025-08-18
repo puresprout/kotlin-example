@@ -38,7 +38,7 @@ import kotlinx.coroutines.runBlocking
 //    val job = launch {
 //        throw RuntimeException("boom")
 //    }
-//    job.join() // 완료 대기; 위 예외는 부모의 handler가 처리됨
+//    job.join() // 완료 대기
 //}
 
 // 루트 스코프 + Handler(추천)
