@@ -91,4 +91,22 @@ class VarianceTest {
         moveCats(cats, dstCats)
         println(dstCats)
     }
+
+    @Test
+    fun contravariantTest4() {
+        open class Animal(val id: Int)
+        class Dog(id: Int) : Animal(id)
+        class Cat(id: Int) : Animal(id)
+
+        val byId: Comparator<Animal> = Comparator { a, b -> a.id.compareTo(b.id) }
+
+        val dogs = mutableListOf(Dog(3), Dog(1), Dog(2))
+        val cats = mutableListOf(Cat(5), Cat(2), Cat(9))
+
+        dogs.sortWith(byId)
+        cats.sortWith(byId)
+
+        println(dogs.map { it.id })   // [1, 2, 3]
+        println(cats.map { it.id })   // [2, 5, 9]
+    }
 }
