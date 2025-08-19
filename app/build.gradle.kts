@@ -14,6 +14,7 @@ dependencies {
     testImplementation(libs.kotlinxCoroutinesTest)
 
     implementation(libs.bundles.kotlinxEcosystem)
+    implementation(kotlin("reflect"))
 }
 
 application {
