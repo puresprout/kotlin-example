@@ -11,7 +11,14 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
 
 // INFO IDEA내에서 테스트를 실행하려면 kotest 플러그인을 설치해야 함
 class StringSpecSample : StringSpec({
@@ -25,6 +32,30 @@ class StringSpecSample : StringSpec({
 class FunSpecSample : FunSpec({
     test("덧셈 결과는 양수다") {
         (2 + 3) shouldBeGreaterThan 0
+    }
+})
+
+
+
+class Calculator {
+    fun add(a: Int, b: Int) = a + b
+    fun divide(a: Int, b: Int): Int {
+        require(b != 0) { "b must not be zero" }
+        return a / b
+    }
+}
+
+class CalculatorTest : FunSpec({
+    val calc = Calculator()
+
+    test("add는 두 수의 합을 반환한다") {
+        calc.add(2, 3) shouldBe 5
+    }
+
+    test("divide는 0으로 나누면 IllegalArgumentException을 던진다") {
+        shouldThrow<IllegalArgumentException> {
+            calc.divide(10, 0)
+        }
     }
 })
 
@@ -83,9 +114,87 @@ class DataTestSample : StringSpec({
 
 
 
+class PasswordValidator {
+    fun isValid(pw: String): Boolean =
+        pw.length >= 8 &&
+                pw.any { it.isDigit() } &&
+                pw.any { it.isUpperCase() } &&
+                pw.any { it.isLowerCase() }
+}
+
+class PasswordValidatorTest : FunSpec({
+    val v = PasswordValidator()
+
+    test("여러 케이스를 데이터 기반으로 검증한다") {
+        forAll(
+            row("Abcdefg1", true),
+            row("abcdefg1", false),   // 대문자 없음
+            row("ABCDEFG1", false),   // 소문자 없음
+            row("Abcdefgh", false),   // 숫자 없음
+            row("A1b", false)         // 길이 부족
+        ) { pw, expected ->
+            v.isValid(pw) shouldBe expected
+        }
+    }
+})
+
+
+
 class CoroutineSample : FunSpec({
     test("suspend 함수 결과 검증") {
         suspend fun fetch(): Int { delay(10); return 42 }
         fetch() shouldBe 42
+    }
+})
+
+
+
+data class User(val id: Long, val name: String)
+
+interface UserRepository {
+    suspend fun findById(id: Long): User?
+}
+
+class UserService(private val repo: UserRepository) {
+    suspend fun displayName(id: Long): String =
+        repo.findById(id)?.name ?: throw NoSuchElementException("user $id")
+}
+
+class UserServiceTest : FunSpec({
+    val repo = mockk<UserRepository>()
+    val service = UserService(repo)
+
+    test("존재하는 유저면 이름을 반환한다") {
+        coEvery { repo.findById(1) } returns User(1, "Alice")
+
+        service.displayName(1) shouldBe "Alice"
+        coVerify(exactly = 1) { repo.findById(1) }
+    }
+
+    test("존재하지 않으면 NoSuchElementException") {
+        coEvery { repo.findById(2) } returns null
+
+        shouldThrow<NoSuchElementException> { service.displayName(2) }
+        coVerify(exactly = 1) { repo.findById(2) }
+    }
+})
+
+
+
+class Counter {
+    fun tick(n: Int, delayMs: Long): Flow<Int> = flow {
+        repeat(n) { i ->
+            delay(delayMs)
+            emit(i + 1)
+        }
+    }
+}
+
+class CounterTest : FunSpec({
+    test("tick은 지정 개수만큼 순차 방출한다") {
+        runTest {
+            val values = Counter().tick(n = 3, delayMs = 10).toList()
+            values shouldBe listOf(1, 2, 3)
+        }
     }
 })
