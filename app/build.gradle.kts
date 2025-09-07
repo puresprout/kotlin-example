@@ -15,6 +15,8 @@ dependencies {
 
     implementation(libs.bundles.kotlinxEcosystem)
     implementation(libs.kotlinReflect)
+
+    testImplementation(libs.mockkCore)
 }
 
 application {
