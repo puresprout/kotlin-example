@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.kotlinReflect)
 
     testImplementation(libs.mockkCore)
+    testImplementation(libs.bundles.kotest)
 }
 
 application {
@@ -24,3 +25,8 @@ application {
     // (Note that Kotlin compiles `App.kt` to a class with FQN `com.example.app.AppKt`.)
     mainClass = "com.purestation.app.AppKt"
 }
+
+// 이 옵션이 없어도 ./gradlew test시 kotest 부분 실행됨
+//tasks.test {
+//    useJUnitPlatform()
+//}
