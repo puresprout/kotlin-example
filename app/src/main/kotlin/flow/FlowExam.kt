@@ -83,7 +83,30 @@ suspend fun main() {
 
 
 
-// debounce + distinctUntilChanged (검색창)
+// debounce + distinctUntilChanged
+//suspend fun search(q: String) { println("Searching: $q") }
+//
+//@OptIn(FlowPreview::class)
+//fun main() = runBlocking {
+//    val inputs = flow {
+//        emit("k") ; delay(50)
+//        emit("ko"); delay(50)
+//        emit("kot"); delay(50)
+//        emit("kotlin"); delay(400)
+//        emit("kotlin"); delay(350)
+//        emit("kotlin"); delay(10)
+//        emit("kotlin flow")
+//    }
+//
+//    inputs
+//        .debounce(300)
+//        .distinctUntilChanged()
+//        .collect { search(it) }
+//}
+
+
+
+// MutableStateFlow + debounce + distinctUntilChanged (검색창)
 //suspend fun search(q: String): List<String> {
 //    delay(200)
 //    return listOf(q)
@@ -97,7 +120,7 @@ suspend fun main() {
 //    val job = launch {
 //        query
 //            .debounce(300)
-////            .distinctUntilChanged() // INFO 없어도 중복 제거 되는데
+////            .distinctUntilChanged() // 이 연산자 이전에 MutableStateFlow에서 같은 값을 넣으면 무시됨?
 //            .flatMapLatest { q -> flow { emit(search(q)) } }
 //            .collect {
 ////                println("result: ${search(it)}")
