@@ -1,44 +1,20 @@
 package com.purestation.app.flow
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.retryWhen
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.pow
 
 // 초간단 asFlow: 1·2·3 제곱 출력
-suspend fun main() {
-    listOf(1,2,3)
-        .asFlow()
-        .onEach { delay(100) }
-        .map { it * it }
-        .collect(::println)
-}
+//suspend fun main() {
+//    listOf(1,2,3)
+//        .asFlow()
+//        .onEach { delay(100) }
+//        .map { it * it }
+//        .collect(::println)
+//}
 
 
 
@@ -286,3 +262,53 @@ suspend fun main() {
 //
 //    if (r == null) println("timeout")
 //}
+
+
+
+// 느린 소비자와 buffer/conflate 비교
+//fun ints(): Flow<Int> = flow {
+//    for (i in 1..5) {
+//        delay(100)
+//        emit(i)
+//    }
+//}
+//
+//suspend fun slowCollect(f: Flow<Int>) {
+//    f.collect {
+//        delay(300)
+//        println("Got $it at ${System.currentTimeMillis()}")
+//    }
+//}
+//
+//fun main() = runBlocking {
+//    val tA = measureTimeMillis { slowCollect(ints()) }
+//    println()
+//    val tB = measureTimeMillis { slowCollect(ints().buffer()) }
+//    println()
+//    val tC = measureTimeMillis { slowCollect(ints().conflate()) }
+//    println()
+//
+//    println("A: $tA ms, B(buffer): $tB ms, C(conflate): $tC ms")
+//}
+
+
+
+// 콜드 Flow → 핫 SharedFlow 브리지
+fun apiFlow() = flow {
+    println("API call started")
+    delay(300)
+    emit("payload")
+}
+
+fun main(): Unit = runBlocking {
+    val shared = apiFlow()
+        .shareIn(this, started = SharingStarted.Eagerly, replay = 1)
+
+    val a = launch { shared.collect { println("A: $it") } }
+    val b = launch { shared.collect { println("B: $it") } }
+
+    delay(500)
+
+    a.cancel()
+    b.cancel()
+}
