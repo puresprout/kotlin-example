@@ -12,6 +12,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.EmptyCoroutineContext
@@ -94,7 +95,7 @@ class CoroutineTest {
     // 예외 전파와 SupervisorJob
     @Test
     fun test4(): Unit = runBlocking {
-//    fun test4() = runTest {   // 출력이 잘 안 되는데,...
+//    fun test4() = runTest {   // 출력이 안 되는데, supervisorScope 방식으로는 됨
         val scope = CoroutineScope(SupervisorJob())
 
         scope.launch {
