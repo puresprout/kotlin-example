@@ -13,9 +13,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.test.Test
 import kotlin.time.measureTime
 
@@ -116,5 +119,62 @@ class CoroutineTest {
         delay(2000)
 
         scope.cancel()
+    }
+
+    // 콜백 통합: suspendCancellableCoroutine
+    // 콜백 기반 API (가짜)
+    interface NetworkCallback {
+        fun onSuccess(data: String)
+        fun onError(e: Throwable)
+    }
+
+    @Test
+    fun test5() = runTest {
+        fun fakeNetworkRequest(callback: NetworkCallback) {
+            Thread {
+                try {
+                    Thread.sleep(1000) // 네트워크 대기 시뮬레이션
+                    callback.onSuccess("📦 서버 응답 데이터")
+                } catch (e: Exception) {
+                    callback.onError(e)
+                }
+            }.start()
+        }
+
+        // suspend 함수로 변환
+        suspend fun fetchData(): String = suspendCancellableCoroutine { cont ->
+            val callback = object : NetworkCallback {
+                override fun onSuccess(data: String) {
+                    if (cont.isActive) cont.resume(data)
+                }
+                override fun onError(e: Throwable) {
+                    if (cont.isActive) cont.resumeWithException(e)
+                }
+            }
+
+            // 요청 시작
+            fakeNetworkRequest(callback)
+
+            // 취소 시 정리 작업
+            cont.invokeOnCancellation {
+                println("❌ 코루틴 취소됨 → 네트워크 요청도 취소 가능")
+            }
+
+            // At this point the coroutine is suspended
+            // by suspendCancellableCoroutine until callback fires
+        }
+
+        // 사용 예시
+        val job = launch {
+            try {
+                val result = fetchData()
+                println("결과: $result")
+            } catch (e: Exception) {
+                println("예외 발생: $e")
+            }
+        }
+
+        delay(500)   // 반쯤 기다리다가
+        job.cancel() // 취소해보기
     }
 }
