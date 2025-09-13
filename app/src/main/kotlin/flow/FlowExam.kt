@@ -1,11 +1,15 @@
 package com.purestation.app.flow
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 
 // 초간단 asFlow: 1·2·3 제곱 출력
 //suspend fun main() {
@@ -294,21 +298,41 @@ import kotlinx.coroutines.runBlocking
 
 
 // 콜드 Flow → 핫 SharedFlow 브리지
-fun apiFlow() = flow {
-    println("API call started")
-    delay(300)
-    emit("payload")
+//fun apiFlow() = flow {
+//    println("API call started")
+//    delay(300)
+//    emit("payload")
+//}
+//
+//fun main(): Unit = runBlocking {
+//    val shared = apiFlow()
+//        .shareIn(this, started = SharingStarted.Eagerly, replay = 1)
+//
+//    val a = launch { shared.collect { println("A: $it") } }
+//    val b = launch { shared.collect { println("B: $it") } }
+//
+//    delay(500)
+//
+//    a.cancel()
+//    b.cancel()
+//}
+
+
+
+// Flow + 에러 & 재시도
+fun riskyFlow(): Flow<Int> = flow {
+    emit(1);
+    emit(2)
+    error("bang")
 }
 
-fun main(): Unit = runBlocking {
-    val shared = apiFlow()
-        .shareIn(this, started = SharingStarted.Eagerly, replay = 1)
-
-    val a = launch { shared.collect { println("A: $it") } }
-    val b = launch { shared.collect { println("B: $it") } }
-
-    delay(500)
-
-    a.cancel()
-    b.cancel()
+suspend fun main() {
+    riskyFlow()
+        // retry(2): 업스트림에서 예외가 나면 최대 2번까지 처음부터 재수집(re-subscribe) 시도
+        // 람다는 발생한 예외(it)를 받아서 true면 재시도, false면 재시도 중단
+        // 여기선 IOException일 때만 재시도하며, 그 결과를 println으로 출력
+        // (참고: error("bang")은 IllegalStateException이므로 실제로는 재시도되지 않음)
+        .retry(2) { (it is IOException).also(::println) }
+        .catch { emit(-1) }
+        .collect { println(it) }
 }
