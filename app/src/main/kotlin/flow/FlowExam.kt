@@ -103,7 +103,7 @@ import java.io.IOException
 //    val job = launch {
 //        query
 //            .debounce(300)
-////            .distinctUntilChanged() // 이 연산자 이전에 MutableStateFlow에서 같은 값을 넣으면 무시됨?
+////            .distinctUntilChanged() // MutableStateFlow는 같은 값(==) 설정 시 기본적으로 재방출하지 않는 “distinct until changed” 의미론
 //            .flatMapLatest { q -> flow { emit(search(q)) } }
 //            .collect {
 ////                println("result: ${search(it)}")
