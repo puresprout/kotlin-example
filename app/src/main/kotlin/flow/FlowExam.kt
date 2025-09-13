@@ -1,10 +1,13 @@
 package com.purestation.app.flow
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
@@ -320,19 +323,42 @@ import java.io.IOException
 
 
 // Flow + 에러 & 재시도
-fun riskyFlow(): Flow<Int> = flow {
-    emit(1);
-    emit(2)
-    error("bang")
-}
+//fun riskyFlow(): Flow<Int> = flow {
+//    emit(1);
+//    emit(2)
+//    error("bang")
+//}
+//
+//suspend fun main() {
+//    riskyFlow()
+//        // retry(2): 업스트림에서 예외가 나면 최대 2번까지 처음부터 재수집(re-subscribe) 시도
+//        // 람다는 발생한 예외(it)를 받아서 true면 재시도, false면 재시도 중단
+//        // 여기선 IOException일 때만 재시도하며, 그 결과를 println으로 출력
+//        // (참고: error("bang")은 IllegalStateException이므로 실제로는 재시도되지 않음)
+//        .retry(2) { (it is IOException).also(::println) }
+//        .catch { emit(-1) }
+//        .collect { println(it) }
+//}
 
-suspend fun main() {
-    riskyFlow()
-        // retry(2): 업스트림에서 예외가 나면 최대 2번까지 처음부터 재수집(re-subscribe) 시도
-        // 람다는 발생한 예외(it)를 받아서 true면 재시도, false면 재시도 중단
-        // 여기선 IOException일 때만 재시도하며, 그 결과를 println으로 출력
-        // (참고: error("bang")은 IllegalStateException이므로 실제로는 재시도되지 않음)
-        .retry(2) { (it is IOException).also(::println) }
-        .catch { emit(-1) }
-        .collect { println(it) }
+
+
+// flatMapLatest (최신만 유지)
+@OptIn(ExperimentalCoroutinesApi::class)
+fun main(): Unit = runBlocking {
+    // 100ms마다 1,2,3 방출
+    val upstream = flow {
+        emit(1); delay(100)
+        emit(2); delay(100)
+        emit(3)
+    }
+
+    upstream
+        .flatMapLatest { v ->
+            flow {
+                emit("start $v")
+                delay(150)               // 다음 값이 오면 현재 Flow는 취소됨
+                emit("end $v")
+            }
+        }
+        .collect { println(it) }        // start 1, start 2, start 3, end 3 (1/2의 end는 취소로 미방출)
 }
