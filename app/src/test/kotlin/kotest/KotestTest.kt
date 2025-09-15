@@ -37,15 +37,15 @@ class FunSpecSample : FunSpec({
 
 
 
-class Calculator {
-    fun add(a: Int, b: Int) = a + b
-    fun divide(a: Int, b: Int): Int {
-        require(b != 0) { "b must not be zero" }
-        return a / b
-    }
-}
-
 class CalculatorTest : FunSpec({
+    class Calculator {
+        fun add(a: Int, b: Int) = a + b
+        fun divide(a: Int, b: Int): Int {
+            require(b != 0) { "b must not be zero" }
+            return a / b
+        }
+    }
+
     val calc = Calculator()
 
     test("add는 두 수의 합을 반환한다") {
@@ -89,9 +89,9 @@ class DescribeSpecSample : DescribeSpec({
 
 
 
-fun boom(): Nothing = throw IllegalArgumentException("bad input")
-
 class ExceptionSample : FunSpec({
+    fun boom(): Nothing = throw IllegalArgumentException("bad input")
+
     test("예외와 메시지 확인") {
         val e = shouldThrow<IllegalArgumentException> { boom() }
         e.message.shouldContain("bad")
@@ -114,15 +114,15 @@ class DataTestSample : StringSpec({
 
 
 
-class PasswordValidator {
-    fun isValid(pw: String): Boolean =
-        pw.length >= 8 &&
-                pw.any { it.isDigit() } &&
-                pw.any { it.isUpperCase() } &&
-                pw.any { it.isLowerCase() }
-}
-
 class PasswordValidatorTest : FunSpec({
+    class PasswordValidator {
+        fun isValid(pw: String): Boolean =
+            pw.length >= 8 &&
+                    pw.any { it.isDigit() } &&
+                    pw.any { it.isUpperCase() } &&
+                    pw.any { it.isLowerCase() }
+    }
+
     val v = PasswordValidator()
 
     test("여러 케이스를 데이터 기반으로 검증한다") {
@@ -149,13 +149,13 @@ class CoroutineSample : FunSpec({
 
 
 
-data class User(val id: Long, val name: String)
+private data class User(val id: Long, val name: String)
 
-interface UserRepository {
+private interface UserRepository {
     suspend fun findById(id: Long): User?
 }
 
-class UserService(private val repo: UserRepository) {
+private class UserService(private val repo: UserRepository) {
     suspend fun displayName(id: Long): String =
         repo.findById(id)?.name ?: throw NoSuchElementException("user $id")
 }
@@ -181,16 +181,16 @@ class UserServiceTest : FunSpec({
 
 
 
-class Counter {
-    fun tick(n: Int, delayMs: Long): Flow<Int> = flow {
-        repeat(n) { i ->
-            delay(delayMs)
-            emit(i + 1)
+class CounterTest : FunSpec({
+    class Counter {
+        fun tick(n: Int, delayMs: Long): Flow<Int> = flow {
+            repeat(n) { i ->
+                delay(delayMs)
+                emit(i + 1)
+            }
         }
     }
-}
 
-class CounterTest : FunSpec({
     test("tick은 지정 개수만큼 순차 방출한다") {
         runTest {
             val values = Counter().tick(n = 3, delayMs = 10).toList()
