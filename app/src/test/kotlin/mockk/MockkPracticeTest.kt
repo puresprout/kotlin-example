@@ -8,20 +8,20 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-interface Calculator {
-    fun add(a: Int, b: Int): Int
-    fun log(message: String): Unit
-}
-
-class CalcUser(private val calc: Calculator) {
-    fun addAndLog(a: Int, b: Int): Int {
-        val r = calc.add(a, b)
-        calc.log("sum=$r")
-        return r
-    }
-}
-
 class CalcUserTest {
+    interface Calculator {
+        fun add(a: Int, b: Int): Int
+        fun log(message: String): Unit
+    }
+
+    class CalcUser(private val calc: Calculator) {
+        fun addAndLog(a: Int, b: Int): Int {
+            val r = calc.add(a, b)
+            calc.log("sum=$r")
+            return r
+        }
+    }
+
     @Test
     fun `addAndLog calls add then log`() {
         val calc = mockk<Calculator>()
@@ -47,14 +47,14 @@ class CalcUserTest {
 
 
 
-interface UserApi { suspend fun fetchUser(id: Long): User }
-data class User(val id: Long, val name: String)
-
-class UserService(private val api: UserApi) {
-    suspend fun nameOf(id: Long): String = api.fetchUser(id).name
-}
-
 class UserServiceTest {
+    interface UserApi { suspend fun fetchUser(id: Long): User }
+    data class User(val id: Long, val name: String)
+
+    class UserService(private val api: UserApi) {
+        suspend fun nameOf(id: Long): String = api.fetchUser(id).name
+    }
+
     @Test
     fun `suspend stub with coEvery`() = runBlocking {
         val api = mockk<UserApi>()
@@ -72,13 +72,13 @@ class UserServiceTest {
 
 
 
-interface Repo { fun save(payload: String): Boolean }
-
-class UseCase(private val repo: Repo) {
-    fun run(input: String): Boolean = repo.save("prefix:$input")
-}
-
 class UseCaseTest {
+    interface Repo { fun save(payload: String): Boolean }
+
+    class UseCase(private val repo: Repo) {
+        fun run(input: String): Boolean = repo.save("prefix:$input")
+    }
+
     @Test
     fun `capture argument`() {
         val repo = mockk<Repo>()
@@ -100,10 +100,10 @@ class UseCaseTest {
 
 
 
-interface A { fun step1() }
-interface B { fun step2() }
-
 class OrderTest {
+    interface A { fun step1() }
+    interface B { fun step2() }
+
     @Test
     fun `verify order & sequence`() {
         val a = mockk<A>()
@@ -135,13 +135,13 @@ class OrderTest {
 
 
 
-open class PriceCalc {
-    open fun base() = 100
-    open fun tax() = 10
-    fun total() = base() + tax()
-}
-
 class SpyTest {
+    open class PriceCalc {
+        open fun base() = 100
+        open fun tax() = 10
+        fun total() = base() + tax()
+    }
+
     @Test
     fun `spyk keeps real logic unless stubbed`() {
         val spy = spyk(PriceCalc())
@@ -155,9 +155,9 @@ class SpyTest {
 
 
 
-interface Parser { fun parse(s: String): Int }
-
 class ParserTest {
+    interface Parser { fun parse(s: String): Int }
+
     @Test
     fun `returnsMany, throws, returnsArgument`() {
         val p = mockk<Parser>()
@@ -176,15 +176,15 @@ class ParserTest {
 
 
 
-object TokenProvider { fun issue() = "real-token" }
-class Util { fun nowEpoch() = System.currentTimeMillis() }
-class Client {
-    fun newUtil(): Util = Util()
-    fun login(): String = TokenProvider.issue()
-    fun timestamp(): Long = newUtil().nowEpoch()
-}
-
 class HardToMockTest {
+    object TokenProvider { fun issue() = "real-token" }
+    class Util { fun nowEpoch() = System.currentTimeMillis() }
+    class Client {
+        fun newUtil(): Util = Util()
+        fun login(): String = TokenProvider.issue()
+        fun timestamp(): Long = newUtil().nowEpoch()
+    }
+
     @Test
     fun `mock object, static, constructor`() {
         val client = Client()
@@ -208,22 +208,22 @@ class HardToMockTest {
 
 
 
-// 도메인과 계약
-data class Post(val id: Long, val title: String)
-interface PostRepository {
-    suspend fun find(id: Long): Post?
-    suspend fun save(post: Post): Unit
-}
-
-class PostService(private val repo: PostRepository) {
-    suspend fun uppercaseTitle(id: Long): Boolean {
-        val p = repo.find(id) ?: return false
-        repo.save(p.copy(title = p.title.uppercase()))
-        return true
-    }
-}
-
 class PostServiceTest {
+    // 도메인과 계약
+    data class Post(val id: Long, val title: String)
+    interface PostRepository {
+        suspend fun find(id: Long): Post?
+        suspend fun save(post: Post): Unit
+    }
+
+    class PostService(private val repo: PostRepository) {
+        suspend fun uppercaseTitle(id: Long): Boolean {
+            val p = repo.find(id) ?: return false
+            repo.save(p.copy(title = p.title.uppercase()))
+            return true
+        }
+    }
+
     @Test
     fun `uppercaseTitle updates when found`() = runBlocking {
         val repo = mockk<PostRepository>()
