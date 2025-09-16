@@ -22,6 +22,7 @@ class EventBatcher(
 
     private val worker = scope.launch {
         val buf = mutableListOf<Event>()
+
         suspend fun flush() {
             if (buf.isEmpty()) return
             val batch = buf.toList()
@@ -29,6 +30,7 @@ class EventBatcher(
             uploader(batch)
             _reports.emit(batch)
         }
+
         try {
             while (isActive) {
                 select<Unit> {
@@ -50,5 +52,6 @@ class EventBatcher(
     }
 
     suspend fun submit(e: Event) = inCh.send(e)
+
     fun close() { inCh.close(); worker.cancel() }
 }
