@@ -6,7 +6,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 
+// O
 //fun main() = runBlocking {
 //    launch {
 //        supervisorScope {
@@ -22,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 //    }.join()
 //}
 
+// X
 //fun main() = runBlocking {
 //    val scope = CoroutineScope(SupervisorJob())
 //

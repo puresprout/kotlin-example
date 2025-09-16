@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
@@ -411,5 +412,27 @@ class FlowTest {
             .retry(2) { (it is IOException).also(::println) }
             .catch { emit(-1) }
             .collect { println(it) }
+    }
+
+    // flatMapLatest (최신만 유지)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun test15() = runTest {
+        // 100ms마다 1,2,3 방출
+        val upstream = flow {
+            emit(1); delay(100)
+            emit(2); delay(100)
+            emit(3)
+        }
+
+        upstream
+            .flatMapLatest { v ->
+                flow {
+                    emit("start $v")
+                    delay(150)               // 다음 값이 오면 현재 Flow는 취소됨
+                    emit("end $v")
+                }
+            }
+            .collect { println(it) }        // start 1, start 2, start 3, end 3 (1/2의 end는 취소로 미방출)
     }
 }
