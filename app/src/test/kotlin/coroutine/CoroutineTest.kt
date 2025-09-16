@@ -97,7 +97,7 @@ class CoroutineTest {
 
     // 예외 전파와 SupervisorJob
     @Test
-    fun test4(): Unit = runBlocking {
+    fun test4(): Unit = runTest {
 //    fun test4() = runTest {   // 출력이 안 되는데, supervisorScope 방식으로는 됨
         val scope = CoroutineScope(SupervisorJob())
 
