@@ -1,6 +1,7 @@
 package com.purestation.app.delegation
 
 import kotlin.properties.Delegates
+import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 import kotlin.test.Test
 
@@ -96,5 +97,58 @@ class CustomDelegationTest {
         var title: String by LogDelegate("init")
 
         println(title)
+    }
+
+    @Test
+    fun test6() {
+        var age: Int by Delegates.vetoable(0) { _, old, new ->
+            val ok = new >= 0
+            if (!ok) println("age 변경 거부: $old -> $new")
+            ok
+        }
+
+        println(age) // 0
+        age = 12
+        println(age) // 12
+
+        age = -1     // veto: false → 변경 안 됨
+        println(age) // 12 (그대로)
+    }
+
+    @Test
+    fun test7() {
+        /**
+         * 환경변수를 "선언 시점"에 한 번 읽어 고정하는 위임.
+         * 없으면 즉시 예외(빠른 실패).
+         */
+        class RequiredEnv(private val key: String? = null) {
+            // by 바인딩 시 1회 호출됨
+            operator fun provideDelegate(
+                thisRef: Any?,
+                property: KProperty<*>
+            ): ReadOnlyProperty<Any?, String> {
+                println("provideDelegate")
+
+                // 키가 없으면 프로퍼티 이름을 대문자로 사용
+                val actualKey = key ?: property.name.uppercase()
+
+                // 선언 시점에 읽고, 없으면 예외
+                val value = System.getenv(actualKey)
+                    ?: throw IllegalStateException("ENV $actualKey is required")
+
+                // 이후 접근은 위에서 캡처한 value만 반환
+                return ReadOnlyProperty { _, _ -> value }
+            }
+        }
+
+        // 가독성용 팩토리
+        fun requiredEnv(key: String? = null) = RequiredEnv(key)
+
+        // 사용 예시: 선언 시점에 HOME을 읽고 고정
+        val HOME: String by requiredEnv("HOME")
+        // val PATH: String by requiredEnv()  // 키 생략 시 "PATH" 사용
+
+        println("After the declaration")
+        println(HOME)
     }
 }
