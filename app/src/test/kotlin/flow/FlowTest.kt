@@ -50,32 +50,6 @@ class FlowTest {
             .collect { delay(300) } // 느린 소비자
     }
 
-    @OptIn(FlowPreview::class)
-    @Test
-    fun debounceTest() = runTest {
-        data class Query(val text: String, val at: Long)
-
-        val events = listOf(
-            Query("a", 0),
-            Query("ap", 120),
-            Query("app", 220),
-            Query("apple", 800) // 앞에서 멈췄다가 800ms에 새 입력
-        )
-
-        val queryFlow = flow {
-            val start = System.currentTimeMillis()
-            for (e in events) {
-                delay(e.at - (System.currentTimeMillis() - start))
-                emit(e.text)
-            }
-        }
-
-        queryFlow
-            .debounce(300)              // 300ms 동안 새 입력 없을 때만 방출
-            .distinctUntilChanged()     // 같은 값 연속 방지(선택)
-            .collect { println("search for: $it") }
-    }
-
     @Test
     fun bufferTest1() = runTest {
         val producer = flow {
@@ -148,28 +122,6 @@ class FlowTest {
             delay(300)
             "done $it"
         }.collect { println(it) }
-    }
-
-    // debounce + distinctUntilChanged
-    @OptIn(FlowPreview::class)
-    @Test
-    fun test4() = runTest {
-        fun search(q: String) { println("Searching: $q") }
-
-        val inputs = flow {
-            emit("k") ; delay(50)
-            emit("ko"); delay(50)
-            emit("kot"); delay(50)
-            emit("kotlin"); delay(400)
-            emit("kotlin"); delay(350)
-            emit("kotlin"); delay(10)
-            emit("kotlin flow")
-        }
-
-        inputs
-            .debounce(300)
-            .distinctUntilChanged()
-            .collect { search(it) }
     }
 
     // MutableStateFlow + debounce + distinctUntilChanged (검색창)
